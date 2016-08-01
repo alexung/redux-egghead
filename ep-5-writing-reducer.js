@@ -1,3 +1,4 @@
+// === THE REDUCER ===
 // OLD SYNTAX. NEWER ONE IS BELOW THIS COUNTER
 // function counter(state, action) {
 //   if (typeof state === 'undefined') {
