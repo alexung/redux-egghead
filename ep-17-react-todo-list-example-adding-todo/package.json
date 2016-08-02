@@ -1,0 +1,17 @@
+{
+  "name": "ep-17-react-todo-list-example-adding-todo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bundle.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-plugin-transform-object-rest-spread": "^6.8.0"
+  },
+  "plugins": {
+    "transform-object-rest-spread"
+  }
+}
