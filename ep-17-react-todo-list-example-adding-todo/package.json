@@ -3,15 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "bundle.js",
+  "dependencies": {
+    "react-dom": "^0.14.7"
+  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "babel-plugin-transform-object-rest-spread": "^6.8.0"
-  },
-  "plugins": {
-    "transform-object-rest-spread"
-  }
+  "license": "ISC"
 }

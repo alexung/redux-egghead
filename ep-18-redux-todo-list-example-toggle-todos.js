@@ -1,7 +1,4 @@
-// === REACT TODO LIST EXAMPLE (ADDING A TODO) ===
-import React from 'react';
-import ReactDOM from 'react-dom';
-
+// === REACT TODO LIST EXAMPLE (TOGGLE A TODO) ===
 const todo = (state, action) => {
   switch (action.type) {
     case 'ADD_TODO':
@@ -12,7 +9,7 @@ const todo = (state, action) => {
       };
     case 'TOGGLE_TODO':
       if (state.id !== action.id) {
-        return todo;
+        return state;
       }
 
       return {
@@ -86,7 +83,17 @@ class TodoApp extends Component {
         <ul>
           {this.props.todos.map(todo =>
             // key is the todo.id
-            <li key={todo.id}>
+            <li key={todo.id}
+              onClick={() => {
+                store.dispatch({
+                  type: 'TOGGLE_TODO',
+                  id: todo.id
+                });
+              }};
+              style={{
+                textDecoration: todo.completed ? 'line-through' : 'none'
+              }}
+            }}>
               {todo.text}
             </li>
           )}
@@ -108,4 +115,5 @@ const render = () => {
 };
 
 store.subscribe(render);
+console.log(store.subscribe(render));
 render();
