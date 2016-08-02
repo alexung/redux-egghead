@@ -1,16 +1,13 @@
-// === REACT TODO LIST EXAMPLE -- EXTRACTING CONTAINER COMPONENTS LIKE FilterLink ===
+// === REDUX: EXTRACTING CONTAINER COMPONENTS LIKE VisibleTodoList and AddTodo ===
 // === INTRO TO CONTAINER COMPONENTS ===
 
-// filter link container component that is subscribed to the Redux chore
-//
+// continue extracting container components from the top level container components
+// like the TodoList component.
 
-// We want to break out container component into separate pieces so that the presentational
-// components don't need to know all these tidbits of data that their children need,
-// bc it's not really separation of concerns
+// I want to keep the TodoList presentational component, but I want to encapsulate
+// within the currently visible Todos into a separate container component that connects
+// the TodoList to the redux chore.  Going to call this component the visible TodoList.
 
-// We don't want to pass a lot of props down the tree when intermediate components don't use them
-// Want to extract a few more container components, just like how we extracted the presentational components
-// i.e. (footer has unnecessary attrs it's just trying to pass to filterlink)
 const todo = (state, action) => {
   switch (action.type) {
     case 'ADD_TODO':
@@ -92,9 +89,6 @@ const Link = ({
   );
 };
 
-// this FilterLink is in the footer and calls the store.dispatch so that footer,
-// which is not really responsible for toggling links, doesn't have to
-
 class FilterLink extends Component {
   componentDidMount() {
     this.unsubscribe = store.subscribe(() =>
@@ -108,14 +102,11 @@ class FilterLink extends Component {
 
   render() {
     const props = this.props;
-    // this is to look for the redux store state, NOT the react state
     const state = store.getState();
 
     return (
       <Link
         active={
-          // it's active, so the link changes its css to be just plain text IF
-          // the props.filter === state.visibilityFilter
           props.filter === state.visibilityFilter
         }
         onClick={() =>
@@ -131,14 +122,6 @@ class FilterLink extends Component {
   }
 }
 
-// Footer is a container component, and is self sufficient
-// =====IMPORTANT=====
-// Footer component is simple and decoupled from what its child components need because
-// the redux store.dispatch({}) is put into one of the children of this container
-// component, rather than straight into the TodoApp component itself.
-
-// can remove props for currentFilter onFilterClick because it's not using them..
-// it's simply passing them on the FilterLink
 const Footer = () => (
   <p>
     Show:
@@ -163,15 +146,12 @@ const Footer = () => (
   </p>
 );
 
-// DON'T explicitly pass the object through this presentational component, rather pass it args that relate to what the DOM element needs to render so that it's not concerned about the type of whatever you pass through
 const Todo = ({
   onClick,
   completed,
   text
 }) => (
-  // we can remove the key={todo.id} bc it's only necessary when enumerating through an arr.  we'll need it later
   <li
-    // when the li is clicked, calls onClick property
     onClick={onClick}
     style={{
       textDecoration:
@@ -197,24 +177,22 @@ const TodoList = ({
   </ul>
 );
 
-// ===IMPORTANT===
-// We're encasing this in a div because we need components to be in a single
-// html root element
-const AddTodo = ({
-  onAddClick
-}) => {
+let nextTodoId = 0;
+const AddTodo = () => {
   let input;
 
   return (
     <div>
       <input ref={node => {
-            // ref above is a function that gets the node corresponding to the ref
-            // saving the value of this input to this.input
             input = node;
           }} />
 
       <button onClick={() => {
-        onAddClick(input.value);
+        store.dispatch({
+          type: 'ADD_TODO',
+          id: nextTodoId++,
+          text: input.value
+        })
         input.value = '';
       }}>
         Add Todo
@@ -241,55 +219,51 @@ const getVisibleTodos = (
   }
 }
 
-let nextTodoId = 0; // global var that we'll keep incrementing
-// === IMPORTANT ===
-// So we define our components above
-// shove them into this TodoApp master componnet, which we call with render
-// then we put in redux store.dispatch({}) into it
-// We can remove props from the footer component before because it doesn't
-// actually use them, it merely passes them along to FilterLink
-const TodoApp = ({
-  todos,
-  visibilityFilter
-}) => (
+class VisibleTodoList extends Component {
+  componentDidMount() {
+    this.unsubscribe = store.subscribe(() =>
+      this.forceUpdate()
+    );
+  }
+
+  componentWillUnmount() {
+    this.unsubscribe();
+  }
+
+  render() {
+    const props = this.props;
+    const state = store.getState();
+
+    return(
+      <TodoList
+        todos={
+          getVisibleTodos(
+            state.todos,
+            state.visibilityFilter
+          )
+        }
+        onTodoClick={id =>
+          store.dispatch({
+            type: 'TOGGLE_TODO',
+            id
+          })
+        }
+      />
+    );
+  }
+}
+
+const TodoApp = () => (
   <div>
-    <AddTodo
-      onAddClick={text =>
-        store.dispatch({
-          type: 'ADD_TODO',
-          id: nextTodoId++,
-          text
-        })
-      }
-    />
-    <TodoList
-      todos={
-        getVisibleTodos(
-          todos,
-          visibilityFilter
-        )
-      }
-      onTodoClick={id =>
-        store.dispatch({
-          type: 'TOGGLE_TODO',
-          id
-        })
-      }
-    />
+    <AddTodo />
+    <VisibleTodoList />
     <Footer />
   </div>
 );
 
-// because we are subscribed via store.subscribe(render)
-// every store change, the getState() is called on the <TodoApp /> component
-// making sure it's up to date
 const render = () => {
   ReactDOM.render(
-    <TodoApp
-      // this makes it so every state field in state object is passed
-      // as prop to TodoApp component
-      {...store.getState()}
-    />,
+    <TodoApp />,
     document.getElementById('root')
   );
 };
