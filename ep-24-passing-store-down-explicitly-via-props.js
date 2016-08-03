@@ -1,12 +1,11 @@
-// === REDUX: EXTRACTING CONTAINER COMPONENTS LIKE VisibleTodoList and AddTodo ===
-// === INTRO TO CONTAINER COMPONENTS ===
+// === PASSING THE STORE DOWN EXPLICITLY VIA PROPS ===
+// container components still subscribe to the store and rerender the components
+// based on changes
 
-// continue extracting container components from the top level container components
-// like the TodoList component.
-
-// I want to keep the TodoList presentational component, but I want to encapsulate
-// within the currently visible Todos into a separate container component that connects
-// the TodoList to the redux chore.  Going to call this component the visible TodoList.
+// === IMPORTANT ===
+// this explicit via props method of passing store is NOT the best, because
+// you still have to pass a store to intermediate components whose children
+// need them
 
 const todo = (state, action) => {
   switch (action.type) {
@@ -57,18 +56,14 @@ const visibilityFilter = (
 };
 
 const { combineReducers } = Redux;
-// below is our root reducer
+
 const todoApp = combineReducers({
   todos,
   visibilityFilter
 });
 
-const { createStore } = Redux;
-const store = createStore(todoApp);
-
 const { Component } = React;
 
-// Presentational component
 const Link = ({
   active,
   children,
@@ -90,9 +85,9 @@ const Link = ({
   );
 };
 
-// CONTAINER COMPONENT, will display the presentational component 'link'
 class FilterLink extends Component {
   componentDidMount() {
+    const { store } = this.props;
     this.unsubscribe = store.subscribe(() =>
       this.forceUpdate()
     );
@@ -104,6 +99,7 @@ class FilterLink extends Component {
 
   render() {
     const props = this.props;
+    const { store } = props;
     const state = store.getState();
 
     return (
@@ -124,25 +120,29 @@ class FilterLink extends Component {
   }
 }
 
-// PRESENTATIONAL COMPONENT
-const Footer = () => (
+// we inconveniently need to pass in store here because FilterLink needs it.
+// this needs to be changed because this is NOT a container component
+const Footer = ({ store }) => (
   <p>
     Show:
     {' '}
     <FilterLink
       filter="SHOW_ALL"
+      store={store}
     >
       All
     </FilterLink>
     {', '}
     <FilterLink
       filter="SHOW_ACTIVE"
+      store={store}
      >
        Active
      </FilterLink>
      {', '}
      <FilterLink
       filter="SHOW_COMPLETED"
+      store={store}
      >
        Completed
      </FilterLink>
@@ -182,12 +182,8 @@ const TodoList = ({
 
 let nextTodoId = 0;
 
-// BOTH CONTAINER AND PRESENTATIONAL COMPONENT
-// below is kind of combining container component AND presentational component
-// but it's okay for this because we can't really envision this component
-// being used for any other purpose and so reusability may be kind of pointless.
-// we'll consider putting this into a different component in future
-const AddTodo = () => {
+// add in store as arg here, even though it's not exactly a container component
+const AddTodo = ({ store }) => {
   let input;
 
   return (
@@ -228,9 +224,9 @@ const getVisibleTodos = (
   }
 }
 
-// Container component, subscribes to the store and rerenders it anytime store state changes
 class VisibleTodoList extends Component {
   componentDidMount() {
+    const { store } = this.props;
     this.unsubscribe = store.subscribe(() =>
       this.forceUpdate()
     );
@@ -242,6 +238,7 @@ class VisibleTodoList extends Component {
 
   render() {
     const props = this.props;
+    const { store } = props;
     const state = store.getState();
 
     return(
@@ -263,28 +260,20 @@ class VisibleTodoList extends Component {
   }
 }
 
-// none of container below needs props passed in as args, so we can remove them
-// and just have an empty ()
-const TodoApp = () => (
+
+const TodoApp = ({ store }) => (
   <div>
-    <AddTodo />
-    <VisibleTodoList />
-    <Footer />
+    <AddTodo store={store} />
+    <VisibleTodoList store={store} />
+    <Footer store={store} />
   </div>
 );
 
-// ==== IMPORTANT ====
-// because we've extracted the logic from each of the components we've added in
-// to TodoApp, we can simply remove:
-// 1. the render function that used to be here
-// 2. store.subscribe(render);
-// 3. render();
+const { createStore } = Redux;
+// const store = createStore(todoApp);
+// include above directly in the TodoApp component:
 
-// because we don't need to keep track of state here, that's all being done in
-// the individual components we've built
-
-// we need this render call though!
 ReactDOM.render(
-  <TodoApp />,
+  <TodoApp store={createStore(todoApp)}/>,
   document.getElementById('root')
 );

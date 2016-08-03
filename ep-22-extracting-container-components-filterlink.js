@@ -131,7 +131,7 @@ class FilterLink extends Component {
   }
 }
 
-// Footer is a container component, and is self sufficient
+// Footer is a presentational component, and is self sufficient
 // =====IMPORTANT=====
 // Footer component is simple and decoupled from what its child components need because
 // the redux store.dispatch({}) is put into one of the children of this container

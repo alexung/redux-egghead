@@ -1,12 +1,4 @@
-// === REDUX: EXTRACTING CONTAINER COMPONENTS LIKE VisibleTodoList and AddTodo ===
-// === INTRO TO CONTAINER COMPONENTS ===
-
-// continue extracting container components from the top level container components
-// like the TodoList component.
-
-// I want to keep the TodoList presentational component, but I want to encapsulate
-// within the currently visible Todos into a separate container component that connects
-// the TodoList to the redux chore.  Going to call this component the visible TodoList.
+// === PASSING THE STORE DOWN IMPLICITLY VIA CONTEXT ===
 
 const todo = (state, action) => {
   switch (action.type) {
@@ -57,18 +49,14 @@ const visibilityFilter = (
 };
 
 const { combineReducers } = Redux;
-// below is our root reducer
+
 const todoApp = combineReducers({
   todos,
   visibilityFilter
 });
 
-const { createStore } = Redux;
-const store = createStore(todoApp);
-
 const { Component } = React;
 
-// Presentational component
 const Link = ({
   active,
   children,
@@ -90,9 +78,9 @@ const Link = ({
   );
 };
 
-// CONTAINER COMPONENT, will display the presentational component 'link'
 class FilterLink extends Component {
   componentDidMount() {
+    const { store } = this.context;
     this.unsubscribe = store.subscribe(() =>
       this.forceUpdate()
     );
@@ -104,6 +92,8 @@ class FilterLink extends Component {
 
   render() {
     const props = this.props;
+    // store does not equal props anymore, rather this.context
+    const { store } = this.context;
     const state = store.getState();
 
     return (
@@ -124,7 +114,13 @@ class FilterLink extends Component {
   }
 }
 
-// PRESENTATIONAL COMPONENT
+FilterLink.contextTypes = {
+  store: React.PropTypes.object
+};
+
+// no longer need store={store} as prop for each FilterLink, can remove it
+// also can remove {store} prop from Footer arg, bc it doesn't need to pass it
+// down anymore
 const Footer = () => (
   <p>
     Show:
@@ -182,12 +178,7 @@ const TodoList = ({
 
 let nextTodoId = 0;
 
-// BOTH CONTAINER AND PRESENTATIONAL COMPONENT
-// below is kind of combining container component AND presentational component
-// but it's okay for this because we can't really envision this component
-// being used for any other purpose and so reusability may be kind of pointless.
-// we'll consider putting this into a different component in future
-const AddTodo = () => {
+const AddTodo = (props, { store }) => {
   let input;
 
   return (
@@ -210,6 +201,10 @@ const AddTodo = () => {
   );
 };
 
+AddTodo.contextTypes = {
+  store: React.PropTypes.object
+};
+
 const getVisibleTodos = (
   todos,
   filter
@@ -228,9 +223,9 @@ const getVisibleTodos = (
   }
 }
 
-// Container component, subscribes to the store and rerenders it anytime store state changes
 class VisibleTodoList extends Component {
   componentDidMount() {
+    const { store } = this.context;
     this.unsubscribe = store.subscribe(() =>
       this.forceUpdate()
     );
@@ -242,9 +237,10 @@ class VisibleTodoList extends Component {
 
   render() {
     const props = this.props;
+    const { store } = this.context;
     const state = store.getState();
 
-    return(
+    return (
       <TodoList
         todos={
           getVisibleTodos(
@@ -263,8 +259,14 @@ class VisibleTodoList extends Component {
   }
 }
 
-// none of container below needs props passed in as args, so we can remove them
-// and just have an empty ()
+// ESSENTIAL TO DECLARE contextTypes
+VisibleTodoList.contextTypes = {
+  store: React.PropTypes.object
+};
+
+// no longer need store={store} as prop for each component, can remove it
+// also can remove {store} prop from TodoApp arg, bc it doesn't need to pass it
+// down anymore
 const TodoApp = () => (
   <div>
     <AddTodo />
@@ -273,18 +275,26 @@ const TodoApp = () => (
   </div>
 );
 
-// ==== IMPORTANT ====
-// because we've extracted the logic from each of the components we've added in
-// to TodoApp, we can simply remove:
-// 1. the render function that used to be here
-// 2. store.subscribe(render);
-// 3. render();
+class Provider extends Component {
+  getChildContext() {
+    return {
+      store: this.props.store
+    };
+  }
+  render() {
+    return this.props.children;
+  }
+}
 
-// because we don't need to keep track of state here, that's all being done in
-// the individual components we've built
+Provider.childContextTypes = {
+  store: React.PropTypes.object
+};
 
-// we need this render call though!
+const { createStore } = Redux;
+
 ReactDOM.render(
-  <TodoApp />,
+  <Provider store={createStore(todoApp)}>
+    <TodoApp />
+  </Provider>,
   document.getElementById('root')
 );
